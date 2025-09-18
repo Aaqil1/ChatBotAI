@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Simple Digital Bookstore</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@3.4.4/dist/tailwind.min.css" rel="stylesheet" />
+    <style>
+        body { background: radial-gradient(circle at top, #f8fafc 0%, #e2e8f0 100%); }
+        .glass-card { backdrop-filter: blur(16px); background: rgba(255, 255, 255, 0.85); }
+        .fade-enter { animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .modal-overlay { background: rgba(15, 23, 42, 0.65); }
+    </style>
+</head>
+<body class="min-h-screen text-slate-800">
+<div class="max-w-6xl mx-auto py-10 px-4 space-y-10">
+    <header class="text-center space-y-2">
+        <h1 class="text-4xl font-bold text-slate-900">Simple Digital Bookstore</h1>
+        <p class="text-slate-600">Explore curated reads and complete your purchase with a fast, distraction-free flow.</p>
+    </header>
+
+    <main class="grid lg:grid-cols-3 gap-8">
+        <section class="lg:col-span-2 space-y-6">
+            <div id="product-grid" class="grid sm:grid-cols-2 gap-6"></div>
+        </section>
+
+        <aside class="space-y-6">
+            <div class="glass-card rounded-2xl shadow-lg p-6 space-y-4">
+                <h2 class="text-2xl font-semibold text-slate-900">Shopping Cart</h2>
+                <div id="cart-items" class="space-y-3 text-sm"></div>
+                <p id="cart-empty" class="text-slate-500">Your cart is empty. Add a book to begin.</p>
+                <div class="flex items-center justify-between text-lg font-semibold">
+                    <span>Total:</span>
+                    <span id="cart-total">$0.00</span>
+                </div>
+            </div>
+
+            <form id="checkout-form" class="glass-card rounded-2xl shadow-lg p-6 space-y-4">
+                <h2 class="text-2xl font-semibold text-slate-900">Checkout</h2>
+                <p class="text-sm text-slate-500">Orders are fulfilled via cash-on-delivery. Please provide accurate delivery details.</p>
+                <label class="block">
+                    <span class="text-sm font-medium text-slate-700">Full Name</span>
+                    <input type="text" name="fullName" required class="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-400" placeholder="Alex Doe" />
+                </label>
+                <label class="block">
+                    <span class="text-sm font-medium text-slate-700">Shipping Address</span>
+                    <textarea name="address" required rows="2" class="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-400" placeholder="123 Main Street, City"></textarea>
+                </label>
+                <label class="block">
+                    <span class="text-sm font-medium text-slate-700">Phone Number</span>
+                    <input type="tel" name="phone" required pattern="^[0-9+\-()\s]{7,}$" class="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-400" placeholder="(555) 123-4567" />
+                </label>
+                <button type="submit" class="w-full rounded-lg bg-indigo-500 hover:bg-indigo-600 transition text-white py-2 font-semibold">Place Order</button>
+                <p id="form-feedback" class="text-sm text-red-500 hidden"></p>
+            </form>
+        </aside>
+    </main>
+</div>
+
+<div id="confirmation-modal" class="fixed inset-0 hidden items-center justify-center modal-overlay">
+    <div class="glass-card fade-enter rounded-2xl shadow-2xl p-8 max-w-sm mx-4 text-center space-y-4">
+        <h3 class="text-2xl font-bold text-slate-900">Thank you for your order!</h3>
+        <p class="text-slate-600">Your confirmation number is</p>
+        <p id="order-id" class="text-2xl font-mono text-indigo-600"></p>
+        <button id="close-modal" class="mt-4 px-4 py-2 bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg">Close</button>
+    </div>
+</div>
+
+<script>
+    const productsEndpoint = '/api/products';
+    const ordersEndpoint = '/api/orders';
+    const cartKey = 'digital-bookstore-cart';
+
+    const productGrid = document.getElementById('product-grid');
+    const cartItemsContainer = document.getElementById('cart-items');
+    const cartTotalElement = document.getElementById('cart-total');
+    const cartEmptyElement = document.getElementById('cart-empty');
+    const checkoutForm = document.getElementById('checkout-form');
+    const formFeedback = document.getElementById('form-feedback');
+    const modal = document.getElementById('confirmation-modal');
+    const orderIdElement = document.getElementById('order-id');
+    const closeModalButton = document.getElementById('close-modal');
+
+    let catalog = [];
+
+    const formatCurrency = value => `$${value.toFixed(2)}`;
+
+    const loadCart = () => {
+        try {
+            const stored = localStorage.getItem(cartKey);
+            return stored ? JSON.parse(stored) : [];
+        } catch (error) {
+            console.error('Failed to parse cart from storage', error);
+            return [];
+        }
+    };
+
+    const saveCart = cart => {
+        localStorage.setItem(cartKey, JSON.stringify(cart));
+    };
+
+    const getCartTotal = cart => cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+
+    const findProduct = productId => catalog.find(product => product.id === productId);
+
+    const renderProducts = () => {
+        productGrid.innerHTML = '';
+        catalog.forEach(product => {
+            const card = document.createElement('article');
+            card.className = 'glass-card rounded-2xl shadow-lg overflow-hidden flex flex-col';
+            card.innerHTML = `
+                <img src="${product.imageUrl}" alt="${product.title}" class="h-48 w-full object-cover" loading="lazy" />
+                <div class="p-6 flex flex-col flex-1 space-y-3">
+                    <div>
+                        <h3 class="text-xl font-semibold text-slate-900">${product.title}</h3>
+                        <p class="text-sm text-slate-500">${product.author}</p>
+                    </div>
+                    <p class="text-sm text-slate-600 flex-1">${product.description}</p>
+                    <div class="flex items-center justify-between">
+                        <span class="text-lg font-semibold text-indigo-600">${formatCurrency(product.price)}</span>
+                        <button data-id="${product.id}" class="add-to-cart px-4 py-2 bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg">Add to Cart</button>
+                    </div>
+                </div>`;
+            productGrid.appendChild(card);
+        });
+    };
+
+    const renderCart = () => {
+        const cart = loadCart();
+        cartItemsContainer.innerHTML = '';
+        if (cart.length === 0) {
+            cartEmptyElement.classList.remove('hidden');
+        } else {
+            cartEmptyElement.classList.add('hidden');
+            cart.forEach(item => {
+                const product = findProduct(item.productId) || {};
+                const row = document.createElement('div');
+                row.className = 'flex items-center justify-between rounded-xl border border-slate-200 px-3 py-2 fade-enter';
+                row.innerHTML = `
+                    <div>
+                        <p class="font-medium">${product.title || 'Book'}</p>
+                        <p class="text-xs text-slate-500">${formatCurrency(item.price)} • Qty: <input type="number" min="1" value="${item.quantity}" data-id="${item.productId}" class="quantity-input w-16 ml-1 rounded border border-slate-200 px-1" /></p>
+                    </div>
+                    <div class="flex items-center space-x-3">
+                        <span class="font-semibold">${formatCurrency(item.price * item.quantity)}</span>
+                        <button data-id="${item.productId}" class="remove-item text-red-500 hover:text-red-600 text-sm">Remove</button>
+                    </div>`;
+                cartItemsContainer.appendChild(row);
+            });
+        }
+        cartTotalElement.textContent = formatCurrency(getCartTotal(cart));
+    };
+
+    const addToCart = productId => {
+        const product = findProduct(productId);
+        if (!product) {
+            alert('Selected product could not be found.');
+            return;
+        }
+        const cart = loadCart();
+        const existing = cart.find(item => item.productId === productId);
+        if (existing) {
+            existing.quantity += 1;
+        } else {
+            cart.push({ productId: product.id, quantity: 1, price: product.price });
+        }
+        saveCart(cart);
+        renderCart();
+    };
+
+    const updateQuantity = (productId, quantity) => {
+        const cart = loadCart();
+        const item = cart.find(entry => entry.productId === productId);
+        if (!item) return;
+        const qty = Math.max(1, Number(quantity) || 1);
+        item.quantity = qty;
+        saveCart(cart);
+        renderCart();
+    };
+
+    const removeItem = productId => {
+        let cart = loadCart();
+        cart = cart.filter(item => item.productId !== productId);
+        saveCart(cart);
+        renderCart();
+    };
+
+    const submitOrder = async event => {
+        event.preventDefault();
+        const cart = loadCart();
+        formFeedback.classList.add('hidden');
+        formFeedback.textContent = '';
+        if (cart.length === 0) {
+            formFeedback.textContent = 'Add at least one book to your cart before checking out.';
+            formFeedback.classList.remove('hidden');
+            return;
+        }
+
+        const formData = new FormData(checkoutForm);
+        const customer = {
+            fullName: formData.get('fullName').trim(),
+            address: formData.get('address').trim(),
+            phone: formData.get('phone').trim()
+        };
+
+        if (!customer.fullName || !customer.address || !customer.phone) {
+            formFeedback.textContent = 'Please complete all required fields.';
+            formFeedback.classList.remove('hidden');
+            return;
+        }
+
+        const payload = { items: cart, customer };
+
+        try {
+            const response = await fetch(ordersEndpoint, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            const data = await response.json();
+            if (!response.ok) {
+                throw new Error(data.message || 'Failed to place order.');
+            }
+
+            orderIdElement.textContent = data.orderId;
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            checkoutForm.reset();
+            saveCart([]);
+            renderCart();
+        } catch (error) {
+            console.error('Order submission failed', error);
+            formFeedback.textContent = error.message || 'Something went wrong. Please try again.';
+            formFeedback.classList.remove('hidden');
+        }
+    };
+
+    const initialize = async () => {
+        try {
+            const response = await fetch(productsEndpoint, { cache: 'no-store' });
+            if (!response.ok) {
+                throw new Error('Unable to load products. Please refresh the page.');
+            }
+            catalog = await response.json();
+            renderProducts();
+            renderCart();
+        } catch (error) {
+            productGrid.innerHTML = `<div class="glass-card p-6 rounded-2xl shadow-lg text-center text-red-500">${error.message}</div>`;
+        }
+    };
+
+    productGrid.addEventListener('click', event => {
+        const button = event.target.closest('.add-to-cart');
+        if (button) {
+            addToCart(button.dataset.id);
+        }
+    });
+
+    cartItemsContainer.addEventListener('input', event => {
+        if (event.target.matches('.quantity-input')) {
+            updateQuantity(event.target.dataset.id, event.target.value);
+        }
+    });
+
+    cartItemsContainer.addEventListener('click', event => {
+        if (event.target.matches('.remove-item')) {
+            removeItem(event.target.dataset.id);
+        }
+    });
+
+    checkoutForm.addEventListener('submit', submitOrder);
+
+    closeModalButton.addEventListener('click', () => {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+    });
+
+    modal.addEventListener('click', event => {
+        if (event.target === modal) {
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+    });
+
+    document.addEventListener('visibilitychange', () => {
+        if (!document.hidden) {
+            renderCart();
+        }
+    });
+
+    initialize();
+</script>
+</body>
+</html>
