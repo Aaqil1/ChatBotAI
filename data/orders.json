@@ -1,1 +1,15 @@
-[]
+[ {
+  "orderId" : "558d4426-aa49-4134-9818-f7ca7161b51a",
+  "items" : [ {
+    "productId" : "book-001",
+    "quantity" : 1,
+    "price" : 14.99
+  } ],
+  "customer" : {
+    "fullName" : "Vishal Pansare",
+    "address" : "N2-1202, River Residency, Phase 3, Moshi",
+    "phone" : "09561455688"
+  },
+  "total" : 14.99,
+  "createdAt" : "2025-09-18T07:02:49.392467Z"
+} ]
