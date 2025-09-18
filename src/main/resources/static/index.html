@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Digital Book Store</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 0 1rem 2rem;
+        background-color: #f5f5f5;
+      }
+
+      header {
+        background-color: #1a237e;
+        color: #fff;
+        padding: 1.5rem 1rem;
+        margin-bottom: 2rem;
+      }
+
+      main {
+        max-width: 960px;
+        margin: 0 auto;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 1.5rem;
+        background-color: #fff;
+      }
+
+      th,
+      td {
+        border: 1px solid #ccc;
+        padding: 0.75rem;
+        text-align: left;
+      }
+
+      th {
+        background-color: #e8eaf6;
+        text-transform: uppercase;
+        font-size: 0.9rem;
+      }
+
+      form {
+        background-color: #fff;
+        padding: 1.5rem;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+      }
+
+      label {
+        display: block;
+        margin-bottom: 0.5rem;
+      }
+
+      input,
+      textarea {
+        width: 100%;
+        padding: 0.5rem;
+        margin-bottom: 1rem;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        font-size: 1rem;
+      }
+
+      button {
+        background-color: #1a237e;
+        color: #fff;
+        border: none;
+        padding: 0.75rem 1.5rem;
+        font-size: 1rem;
+        border-radius: 4px;
+        cursor: pointer;
+      }
+
+      button:hover {
+        background-color: #303f9f;
+      }
+
+      #order-status {
+        margin-top: 1rem;
+        font-weight: bold;
+      }
+
+      #order-status.info {
+        color: #1a237e;
+      }
+
+      #order-status.success {
+        color: #2e7d32;
+      }
+
+      #order-status.error {
+        color: #c62828;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>Digital Book Store</h1>
+      <p>Browse our catalog and place your order.</p>
+    </header>
+    <main>
+      <section>
+        <h2>Catalog</h2>
+        <table id="catalog">
+          <thead>
+            <tr>
+              <th>Title</th>
+              <th>Author</th>
+              <th>Price</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td colspan="3">Loading catalog...</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section>
+        <h2>Place an Order</h2>
+        <form id="order-form">
+          <label for="customerName">Customer Name</label>
+          <input type="text" id="customerName" name="customerName" required />
+
+          <label for="customerEmail">Customer Email</label>
+          <input type="email" id="customerEmail" name="customerEmail" required />
+
+          <label for="bookIsbn">Book ISBN</label>
+          <input type="text" id="bookIsbn" name="bookIsbn" required />
+
+          <label for="quantity">Quantity</label>
+          <input type="number" id="quantity" name="quantity" min="1" value="1" required />
+
+          <label for="shippingAddress">Shipping Address</label>
+          <textarea id="shippingAddress" name="shippingAddress" rows="3" required></textarea>
+
+          <button type="submit">Submit Order</button>
+        </form>
+        <div id="order-status" class="info"></div>
+      </section>
+    </main>
+
+    <script>
+      (function () {
+        function deriveBasePath(pathname) {
+          let base = pathname;
+
+          if (base.endsWith('/static/index.html')) {
+            base = base.slice(0, -'/static/index.html'.length);
+          } else if (base.endsWith('/index.html')) {
+            base = base.slice(0, -'/index.html'.length);
+          }
+
+          if (base === '/' || base === '') {
+            return '';
+          }
+
+          if (base.endsWith('/')) {
+            base = base.slice(0, -1);
+          }
+
+          return base;
+        }
+
+        const runtimeBasePath = deriveBasePath(window.location.pathname);
+        const productsEndpoint = `${runtimeBasePath}/api/products`;
+        const ordersEndpoint = `${runtimeBasePath}/api/orders`;
+
+        const catalogTableBody = document.querySelector('#catalog tbody');
+        const orderForm = document.getElementById('order-form');
+        const orderStatus = document.getElementById('order-status');
+
+        async function loadCatalog() {
+          orderStatus.textContent = 'Loading catalog...';
+          orderStatus.className = 'info';
+
+          try {
+            const response = await fetch(productsEndpoint);
+            if (!response.ok) {
+              throw new Error(`Failed to load catalog (${response.status})`);
+            }
+
+            const products = await response.json();
+            catalogTableBody.innerHTML = '';
+
+            if (!Array.isArray(products) || products.length === 0) {
+              const row = document.createElement('tr');
+              const cell = document.createElement('td');
+              cell.colSpan = 3;
+              cell.textContent = 'No products available.';
+              row.appendChild(cell);
+              catalogTableBody.appendChild(row);
+            } else {
+              products.forEach((product) => {
+                const row = document.createElement('tr');
+
+                const titleCell = document.createElement('td');
+                titleCell.textContent = product.title ?? product.name ?? 'Untitled';
+                row.appendChild(titleCell);
+
+                const authorCell = document.createElement('td');
+                authorCell.textContent = product.author ?? '';
+                row.appendChild(authorCell);
+
+                const priceCell = document.createElement('td');
+                if (product.price != null && !Number.isNaN(Number(product.price))) {
+                  priceCell.textContent = `$${Number(product.price).toFixed(2)}`;
+                } else {
+                  priceCell.textContent = '';
+                }
+                row.appendChild(priceCell);
+
+                catalogTableBody.appendChild(row);
+              });
+            }
+
+            orderStatus.textContent = 'Catalog loaded successfully.';
+            orderStatus.className = 'success';
+          } catch (error) {
+            console.error(error);
+            orderStatus.textContent = error.message;
+            orderStatus.className = 'error';
+          }
+        }
+
+        orderForm.addEventListener('submit', async (event) => {
+          event.preventDefault();
+          orderStatus.textContent = 'Submitting order...';
+          orderStatus.className = 'info';
+
+          const formData = new FormData(orderForm);
+          const payload = Object.fromEntries(formData.entries());
+
+          try {
+            const response = await fetch(ordersEndpoint, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify(payload),
+            });
+
+            if (!response.ok) {
+              const errorBody = await response.text();
+              throw new Error(errorBody || `Order submission failed (${response.status})`);
+            }
+
+            orderForm.reset();
+            orderStatus.textContent = 'Order placed successfully!';
+            orderStatus.className = 'success';
+          } catch (error) {
+            console.error(error);
+            orderStatus.textContent = error.message;
+            orderStatus.className = 'error';
+          }
+        });
+
+        loadCatalog();
+      })();
+    </script>
+  </body>
+</html>
