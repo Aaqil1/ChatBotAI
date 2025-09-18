@@ -1,296 +1,320 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Simple Digital Bookstore</title>
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@3.4.4/dist/tailwind.min.css" rel="stylesheet" />
+    <meta charset="UTF-8">
+    <title>Digital Bookstore</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Tailwind CSS CDN -->
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <style>
-        body { background: radial-gradient(circle at top, #f8fafc 0%, #e2e8f0 100%); }
-        .glass-card { backdrop-filter: blur(16px); background: rgba(255, 255, 255, 0.85); }
-        .fade-enter { animation: fadeIn 0.3s ease-in-out; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        .modal-overlay { background: rgba(15, 23, 42, 0.65); }
+        /* Simple modal styles */
+        .modal { display: none; position: fixed; z-index: 50; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); }
+        .modal.show { display: block; }
+        .modal-content { background: #fff; margin: 5% auto; padding: 2rem; border-radius: 0.5rem; width: 90%; max-width: 400px; }
     </style>
 </head>
-<body class="min-h-screen text-slate-800">
-<div class="max-w-6xl mx-auto py-10 px-4 space-y-10">
-    <header class="text-center space-y-2">
-        <h1 class="text-4xl font-bold text-slate-900">Simple Digital Bookstore</h1>
-        <p class="text-slate-600">Explore curated reads and complete your purchase with a fast, distraction-free flow.</p>
-    </header>
-
-    <main class="grid lg:grid-cols-3 gap-8">
-        <section class="lg:col-span-2 space-y-6">
-            <div id="product-grid" class="grid sm:grid-cols-2 gap-6"></div>
-        </section>
-
-        <aside class="space-y-6">
-            <div class="glass-card rounded-2xl shadow-lg p-6 space-y-4">
-                <h2 class="text-2xl font-semibold text-slate-900">Shopping Cart</h2>
-                <div id="cart-items" class="space-y-3 text-sm"></div>
-                <p id="cart-empty" class="text-slate-500">Your cart is empty. Add a book to begin.</p>
-                <div class="flex items-center justify-between text-lg font-semibold">
-                    <span>Total:</span>
-                    <span id="cart-total">$0.00</span>
-                </div>
-            </div>
-
-            <form id="checkout-form" class="glass-card rounded-2xl shadow-lg p-6 space-y-4">
-                <h2 class="text-2xl font-semibold text-slate-900">Checkout</h2>
-                <p class="text-sm text-slate-500">Orders are fulfilled via cash-on-delivery. Please provide accurate delivery details.</p>
-                <label class="block">
-                    <span class="text-sm font-medium text-slate-700">Full Name</span>
-                    <input type="text" name="fullName" required class="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-400" placeholder="Alex Doe" />
-                </label>
-                <label class="block">
-                    <span class="text-sm font-medium text-slate-700">Shipping Address</span>
-                    <textarea name="address" required rows="2" class="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-400" placeholder="123 Main Street, City"></textarea>
-                </label>
-                <label class="block">
-                    <span class="text-sm font-medium text-slate-700">Phone Number</span>
-                    <input type="tel" name="phone" required pattern="^[0-9+\-()\s]{7,}$" class="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-400" placeholder="(555) 123-4567" />
-                </label>
-                <button type="submit" class="w-full rounded-lg bg-indigo-500 hover:bg-indigo-600 transition text-white py-2 font-semibold">Place Order</button>
-                <p id="form-feedback" class="text-sm text-red-500 hidden"></p>
-            </form>
-        </aside>
-    </main>
-</div>
-
-<div id="confirmation-modal" class="fixed inset-0 hidden items-center justify-center modal-overlay">
-    <div class="glass-card fade-enter rounded-2xl shadow-2xl p-8 max-w-sm mx-4 text-center space-y-4">
-        <h3 class="text-2xl font-bold text-slate-900">Thank you for your order!</h3>
-        <p class="text-slate-600">Your confirmation number is</p>
-        <p id="order-id" class="text-2xl font-mono text-indigo-600"></p>
-        <button id="close-modal" class="mt-4 px-4 py-2 bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg">Close</button>
+<body class="bg-gray-50 min-h-screen font-sans">
+<!-- Navigation Bar -->
+<nav class="bg-white shadow p-4 flex justify-between items-center">
+    <h1 class="text-2xl font-bold">Digital Bookstore</h1>
+    <div id="cart-summary" class="relative cursor-pointer" title="View Cart">
+        <!-- Cart Icon -->
+        <svg class="w-8 h-8 inline-block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13l-1.35 2.7a1 1 0 00.9 1.3h12.2a1 1 0 00.9-1.3L17 13M7 13V6a1 1 0 011-1h9a1 1 0 011 1v7"/>
+        </svg>
+        <span id="cart-count" class="absolute top-0 right-0 bg-red-500 text-white rounded-full px-2 text-xs">0</span>
     </div>
-</div>
+</nav>
+
+<main class="max-w-4xl mx-auto py-8">
+    <!-- Feedback Message -->
+    <div id="feedback" class="mb-4 text-green-600 font-semibold"></div>
+
+    <!-- Product Catalog -->
+    <section id="catalog" class="grid grid-cols-1 md:grid-cols-2 gap-8"></section>
+
+    <!-- Cart Modal -->
+    <section id="cart-modal" class="modal">
+        <div class="modal-content">
+            <h2 class="text-xl font-bold mb-4">Shopping Cart</h2>
+            <div id="cart-items"></div>
+            <div class="mt-4 flex justify-between items-center">
+                <span class="font-bold">Total: $<span id="cart-total">0.00</span></span>
+                <button id="checkout-btn" class="bg-blue-600 text-white px-4 py-2 rounded">Checkout</button>
+            </div>
+            <button id="close-cart" class="mt-4 w-full bg-gray-200 py-2 rounded">Close</button>
+        </div>
+    </section>
+
+    <!-- Checkout Modal -->
+    <section id="checkout-modal" class="modal">
+        <div class="modal-content">
+            <h2 class="text-xl font-bold mb-4">Checkout</h2>
+            <form id="checkout-form" class="space-y-4">
+                <div>
+                    <label class="block font-semibold">Full Name</label>
+                    <input type="text" id="fullName" class="w-full border rounded px-2 py-1" required>
+                    <span id="error-fullName" class="text-red-500 text-xs"></span>
+                </div>
+                <div>
+                    <label class="block font-semibold">Shipping Address</label>
+                    <textarea id="shippingAddress" class="w-full border rounded px-2 py-1" required></textarea>
+                    <span id="error-shippingAddress" class="text-red-500 text-xs"></span>
+                </div>
+                <div>
+                    <label class="block font-semibold">Phone Number</label>
+                    <input type="text" id="phoneNumber" class="w-full border rounded px-2 py-1" required>
+                    <span id="error-phoneNumber" class="text-red-500 text-xs"></span>
+                </div>
+                <button type="submit" class="bg-green-600 text-white px-4 py-2 rounded w-full">Place Order</button>
+            </form>
+            <button id="close-checkout" class="mt-4 w-full bg-gray-200 py-2 rounded">Cancel</button>
+        </div>
+    </section>
+
+    <!-- Confirmation Modal -->
+    <section id="confirmation-modal" class="modal">
+        <div class="modal-content text-center">
+            <h2 class="text-xl font-bold mb-4">Order Confirmed!</h2>
+            <p id="confirmation-message" class="mb-2"></p>
+            <button id="close-confirmation" class="mt-4 w-full bg-blue-600 text-white py-2 rounded">Back to Catalog</button>
+        </div>
+    </section>
+</main>
 
 <script>
-    const productsEndpoint = '/api/products';
-    const ordersEndpoint = '/api/orders';
-    const cartKey = 'digital-bookstore-cart';
-
-    const productGrid = document.getElementById('product-grid');
-    const cartItemsContainer = document.getElementById('cart-items');
-    const cartTotalElement = document.getElementById('cart-total');
-    const cartEmptyElement = document.getElementById('cart-empty');
-    const checkoutForm = document.getElementById('checkout-form');
-    const formFeedback = document.getElementById('form-feedback');
-    const modal = document.getElementById('confirmation-modal');
-    const orderIdElement = document.getElementById('order-id');
-    const closeModalButton = document.getElementById('close-modal');
-
+    // --- Catalog fetched from backend API ---
     let catalog = [];
 
-    const formatCurrency = value => `$${value.toFixed(2)}`;
+    // --- Utility Functions ---
+    function getCart() {
+      // Retrieve cart from localStorage, or empty object if not present
+      return JSON.parse(localStorage.getItem('cart') || '{}');
+    }
+    function setCart(cart) {
+      localStorage.setItem('cart', JSON.stringify(cart));
+    }
+    function cartCount(cart) {
+      // Total quantity of all items
+      return Object.values(cart).reduce((sum, item) => sum + item.quantity, 0);
+    }
+    function cartTotal(cart) {
+      // Total price of all items
+      return Object.values(cart).reduce((sum, item) => sum + item.quantity * item.price, 0).toFixed(2);
+    }
+    function showFeedback(msg, color = 'green') {
+      // Show feedback message for 2 seconds
+      const feedback = document.getElementById('feedback');
+      feedback.textContent = msg;
+      feedback.className = `mb-4 text-${color}-600 font-semibold`;
+      setTimeout(() => { feedback.textContent = ''; }, 2000);
+    }
 
-    const loadCart = () => {
-        try {
-            const stored = localStorage.getItem(cartKey);
-            return stored ? JSON.parse(stored) : [];
-        } catch (error) {
-            console.error('Failed to parse cart from storage', error);
-            return [];
+    // --- Render Catalog ---
+    function renderCatalog() {
+      const catalogEl = document.getElementById('catalog');
+      catalogEl.innerHTML = '';
+      if (catalog.length === 0) {
+        catalogEl.innerHTML = '<p class="text-gray-600">Loading products...</p>';
+        return;
+      }
+      catalog.forEach(book => {
+        const card = document.createElement('div');
+        card.className = 'bg-white shadow rounded p-4 flex flex-col';
+        card.innerHTML = `
+          <img src="${book.imageUrl}" alt="${book.title}" class="h-48 w-full object-cover rounded mb-4">
+          <h3 class="text-lg font-bold">${book.title}</h3>
+          <p class="text-sm text-gray-600 mb-1">by ${book.author}</p>
+          <p class="text-gray-700 mb-2">${book.description}</p>
+          <span class="font-bold text-blue-600 mb-2">$${book.price.toFixed(2)}</span>
+          <button class="add-to-cart bg-green-600 text-white px-4 py-2 rounded mt-auto" data-id="${book.id}">Add to Cart</button>
+        `;
+        catalogEl.appendChild(card);
+      });
+    }
+
+    // --- Update Cart Summary ---
+    function updateCartSummary() {
+      const cart = getCart();
+      document.getElementById('cart-count').textContent = cartCount(cart);
+    }
+
+    // --- Add to Cart Handler ---
+    document.addEventListener('click', function(e) {
+      if (e.target.classList.contains('add-to-cart')) {
+        const id = e.target.getAttribute('data-id');
+        const book = catalog.find(b => b.id === id);
+        const cart = getCart();
+        if (cart[id]) {
+          cart[id].quantity += 1;
+        } else {
+          cart[id] = { ...book, quantity: 1 };
         }
+        setCart(cart);
+        updateCartSummary();
+        showFeedback('Item added to cart!');
+      }
+    });
+
+    // --- Cart Modal Logic ---
+    document.getElementById('cart-summary').onclick = function() {
+      renderCartModal();
+      document.getElementById('cart-modal').classList.add('show');
+    };
+    document.getElementById('close-cart').onclick = function() {
+      document.getElementById('cart-modal').classList.remove('show');
     };
 
-    const saveCart = cart => {
-        localStorage.setItem(cartKey, JSON.stringify(cart));
+    function renderCartModal() {
+      const cart = getCart();
+      const cartItemsEl = document.getElementById('cart-items');
+      cartItemsEl.innerHTML = '';
+      if (Object.keys(cart).length === 0) {
+        cartItemsEl.innerHTML = '<p class="text-gray-600">Your cart is empty.</p>';
+        document.getElementById('checkout-btn').disabled = true;
+        document.getElementById('cart-total').textContent = '0.00';
+        return;
+      }
+      document.getElementById('checkout-btn').disabled = false;
+      Object.values(cart).forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'flex items-center justify-between mb-2';
+        div.innerHTML = `
+          <span class="font-semibold">${item.title}</span>
+          <div class="flex items-center">
+            <button class="decrease bg-gray-200 px-2 rounded" data-id="${item.id}">-</button>
+            <span class="mx-2">${item.quantity}</span>
+            <button class="increase bg-gray-200 px-2 rounded" data-id="${item.id}">+</button>
+          </div>
+          <span class="text-blue-600">$${(item.price * item.quantity).toFixed(2)}</span>
+          <button class="remove bg-red-500 text-white px-2 rounded" data-id="${item.id}">Remove</button>
+        `;
+        cartItemsEl.appendChild(div);
+      });
+      document.getElementById('cart-total').textContent = cartTotal(cart);
+    }
+
+    // --- Cart Item Actions (Increase, Decrease, Remove) ---
+    document.getElementById('cart-items').onclick = function(e) {
+      const id = e.target.getAttribute('data-id');
+      if (!id) return;
+      let cart = getCart();
+      if (e.target.classList.contains('increase')) {
+        cart[id].quantity += 1;
+        setCart(cart);
+        renderCartModal();
+        updateCartSummary();
+      } else if (e.target.classList.contains('decrease')) {
+        if (cart[id].quantity > 1) {
+          cart[id].quantity -= 1;
+        } else {
+          delete cart[id];
+        }
+        setCart(cart);
+        renderCartModal();
+        updateCartSummary();
+      } else if (e.target.classList.contains('remove')) {
+        delete cart[id];
+        setCart(cart);
+        renderCartModal();
+        updateCartSummary();
+        showFeedback('Item removed from cart!', 'red');
+      }
     };
 
-    const getCartTotal = cart => cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+    // --- Checkout Modal Logic ---
+    document.getElementById('checkout-btn').onclick = function() {
+      const cart = getCart();
+      if (Object.keys(cart).length === 0) {
+        showFeedback('Cart is empty. Redirecting to catalog.', 'red');
+        document.getElementById('cart-modal').classList.remove('show');
+        return;
+      }
+      document.getElementById('cart-modal').classList.remove('show');
+      document.getElementById('checkout-modal').classList.add('show');
+    };
+    document.getElementById('close-checkout').onclick = function() {
+      document.getElementById('checkout-modal').classList.remove('show');
+    };
 
-    const findProduct = productId => catalog.find(product => product.id === productId);
+    // --- Checkout Form Validation & Submission ---
+    document.getElementById('checkout-form').onsubmit = async function(e) {
+      e.preventDefault();
+      let valid = true;
+      // Validate required fields
+      ['fullName', 'shippingAddress', 'phoneNumber'].forEach(field => {
+        const value = document.getElementById(field).value.trim();
+        const errorEl = document.getElementById('error-' + field);
+        if (!value) {
+          errorEl.textContent = 'Required';
+          valid = false;
+        } else {
+          errorEl.textContent = '';
+        }
+      });
+      if (!valid) return;
 
-    const renderProducts = () => {
-        productGrid.innerHTML = '';
-        catalog.forEach(product => {
-            const card = document.createElement('article');
-            card.className = 'glass-card rounded-2xl shadow-lg overflow-hidden flex flex-col';
-            card.innerHTML = `
-                <img src="${product.imageUrl}" alt="${product.title}" class="h-48 w-full object-cover" loading="lazy" />
-                <div class="p-6 flex flex-col flex-1 space-y-3">
-                    <div>
-                        <h3 class="text-xl font-semibold text-slate-900">${product.title}</h3>
-                        <p class="text-sm text-slate-500">${product.author}</p>
-                    </div>
-                    <p class="text-sm text-slate-600 flex-1">${product.description}</p>
-                    <div class="flex items-center justify-between">
-                        <span class="text-lg font-semibold text-indigo-600">${formatCurrency(product.price)}</span>
-                        <button data-id="${product.id}" class="add-to-cart px-4 py-2 bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg">Add to Cart</button>
-                    </div>
-                </div>`;
-            productGrid.appendChild(card);
+      // Prepare order data as per new API payload
+      const cart = getCart();
+      const items = Object.values(cart).map(item => ({
+        productId: item.id,
+        quantity: item.quantity,
+        price: item.price
+      }));
+      const customer = {
+        fullName: document.getElementById('fullName').value.trim(),
+        address: document.getElementById('shippingAddress').value.trim(),
+        phone: document.getElementById('phoneNumber').value.trim()
+      };
+
+      // Mock API call to backend running on port 8081
+      try {
+        document.getElementById('checkout-form').querySelector('button[type="submit"]').disabled = true;
+        showFeedback('Placing order...');
+        // Send POST request to mock backend
+        const response = await fetch('http://localhost:8081/api/orders', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ items, customer })
         });
+        if (!response.ok) throw new Error('API error');
+        const data = await response.json();
+        // Expecting { orderId: "ORD-XXXXXXXX" }
+        setCart({});
+        updateCartSummary();
+        document.getElementById('checkout-modal').classList.remove('show');
+        showConfirmation(data.orderId || 'ORD-XXXXXXXX');
+      } catch {
+        showFeedback('Something went wrong, please try again.', 'red');
+      } finally {
+        document.getElementById('checkout-form').querySelector('button[type="submit"]').disabled = false;
+      }
     };
 
-    const renderCart = () => {
-        const cart = loadCart();
-        cartItemsContainer.innerHTML = '';
-        if (cart.length === 0) {
-            cartEmptyElement.classList.remove('hidden');
-        } else {
-            cartEmptyElement.classList.add('hidden');
-            cart.forEach(item => {
-                const product = findProduct(item.productId) || {};
-                const row = document.createElement('div');
-                row.className = 'flex items-center justify-between rounded-xl border border-slate-200 px-3 py-2 fade-enter';
-                row.innerHTML = `
-                    <div>
-                        <p class="font-medium">${product.title || 'Book'}</p>
-                        <p class="text-xs text-slate-500">${formatCurrency(item.price)} • Qty: <input type="number" min="1" value="${item.quantity}" data-id="${item.productId}" class="quantity-input w-16 ml-1 rounded border border-slate-200 px-1" /></p>
-                    </div>
-                    <div class="flex items-center space-x-3">
-                        <span class="font-semibold">${formatCurrency(item.price * item.quantity)}</span>
-                        <button data-id="${item.productId}" class="remove-item text-red-500 hover:text-red-600 text-sm">Remove</button>
-                    </div>`;
-                cartItemsContainer.appendChild(row);
-            });
-        }
-        cartTotalElement.textContent = formatCurrency(getCartTotal(cart));
+    // --- Confirmation Modal Logic ---
+    function showConfirmation(orderId) {
+      document.getElementById('confirmation-message').textContent = `Your order has been placed! Order ID: ${orderId}`;
+      document.getElementById('confirmation-modal').classList.add('show');
+    }
+    document.getElementById('close-confirmation').onclick = function() {
+      document.getElementById('confirmation-modal').classList.remove('show');
+      renderCatalog();
     };
 
-    const addToCart = productId => {
-        const product = findProduct(productId);
-        if (!product) {
-            alert('Selected product could not be found.');
-            return;
-        }
-        const cart = loadCart();
-        const existing = cart.find(item => item.productId === productId);
-        if (existing) {
-            existing.quantity += 1;
-        } else {
-            cart.push({ productId: product.id, quantity: 1, price: product.price });
-        }
-        saveCart(cart);
-        renderCart();
-    };
-
-    const updateQuantity = (productId, quantity) => {
-        const cart = loadCart();
-        const item = cart.find(entry => entry.productId === productId);
-        if (!item) return;
-        const qty = Math.max(1, Number(quantity) || 1);
-        item.quantity = qty;
-        saveCart(cart);
-        renderCart();
-    };
-
-    const removeItem = productId => {
-        let cart = loadCart();
-        cart = cart.filter(item => item.productId !== productId);
-        saveCart(cart);
-        renderCart();
-    };
-
-    const submitOrder = async event => {
-        event.preventDefault();
-        const cart = loadCart();
-        formFeedback.classList.add('hidden');
-        formFeedback.textContent = '';
-        if (cart.length === 0) {
-            formFeedback.textContent = 'Add at least one book to your cart before checking out.';
-            formFeedback.classList.remove('hidden');
-            return;
-        }
-
-        const formData = new FormData(checkoutForm);
-        const customer = {
-            fullName: formData.get('fullName').trim(),
-            address: formData.get('address').trim(),
-            phone: formData.get('phone').trim()
-        };
-
-        if (!customer.fullName || !customer.address || !customer.phone) {
-            formFeedback.textContent = 'Please complete all required fields.';
-            formFeedback.classList.remove('hidden');
-            return;
-        }
-
-        const payload = { items: cart, customer };
-
-        try {
-            const response = await fetch(ordersEndpoint, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
-
-            const data = await response.json();
-            if (!response.ok) {
-                throw new Error(data.message || 'Failed to place order.');
-            }
-
-            orderIdElement.textContent = data.orderId;
-            modal.classList.remove('hidden');
-            modal.classList.add('flex');
-            checkoutForm.reset();
-            saveCart([]);
-            renderCart();
-        } catch (error) {
-            console.error('Order submission failed', error);
-            formFeedback.textContent = error.message || 'Something went wrong. Please try again.';
-            formFeedback.classList.remove('hidden');
-        }
-    };
-
-    const initialize = async () => {
-        try {
-            const response = await fetch(productsEndpoint, { cache: 'no-store' });
-            if (!response.ok) {
-                throw new Error('Unable to load products. Please refresh the page.');
-            }
-            catalog = await response.json();
-            renderProducts();
-            renderCart();
-        } catch (error) {
-            productGrid.innerHTML = `<div class="glass-card p-6 rounded-2xl shadow-lg text-center text-red-500">${error.message}</div>`;
-        }
-    };
-
-    productGrid.addEventListener('click', event => {
-        const button = event.target.closest('.add-to-cart');
-        if (button) {
-            addToCart(button.dataset.id);
-        }
-    });
-
-    cartItemsContainer.addEventListener('input', event => {
-        if (event.target.matches('.quantity-input')) {
-            updateQuantity(event.target.dataset.id, event.target.value);
-        }
-    });
-
-    cartItemsContainer.addEventListener('click', event => {
-        if (event.target.matches('.remove-item')) {
-            removeItem(event.target.dataset.id);
-        }
-    });
-
-    checkoutForm.addEventListener('submit', submitOrder);
-
-    closeModalButton.addEventListener('click', () => {
-        modal.classList.add('hidden');
-        modal.classList.remove('flex');
-    });
-
-    modal.addEventListener('click', event => {
-        if (event.target === modal) {
-            modal.classList.add('hidden');
-            modal.classList.remove('flex');
-        }
-    });
-
-    document.addEventListener('visibilitychange', () => {
-        if (!document.hidden) {
-            renderCart();
-        }
-    });
-
-    initialize();
+    // --- Initial Render ---
+    async function fetchCatalog() {
+      try {
+        const res = await fetch('http://localhost:8081/api/products');
+        if (!res.ok) throw new Error('Failed to fetch products');
+        catalog = await res.json();
+        renderCatalog();
+      } catch {
+        document.getElementById('catalog').innerHTML = '<p class="text-red-500">Failed to load products. Please try again later.</p>';
+      }
+    }
+    fetchCatalog();
+    updateCartSummary();
 </script>
 </body>
 </html>
