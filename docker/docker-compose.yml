@@ -1,0 +1,63 @@
+version: '3.9'
+services:
+  mongodb:
+    image: mongo:6.0
+    container_name: context-mongodb
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+  incident-service:
+    build:
+      context: ../backend
+      dockerfile: incident-service/Dockerfile
+    environment:
+      MONGODB_HOST: mongodb
+      MONGODB_DATABASE: context_support
+      SENTIMENT_URL: http://sentiment-service:8082
+      NOTIFICATION_URL: http://notification-service:8081
+    depends_on:
+      - mongodb
+      - sentiment-service
+    ports:
+      - "8080:8080"
+  notification-service:
+    build:
+      context: ../backend
+      dockerfile: notification-service/Dockerfile
+    environment:
+      MONGODB_HOST: mongodb
+      MONGODB_DATABASE: context_support
+    depends_on:
+      - mongodb
+    ports:
+      - "8081:8081"
+  sentiment-service:
+    build:
+      context: ../backend
+      dockerfile: sentiment-service/Dockerfile
+    environment:
+      MONGODB_HOST: mongodb
+      MONGODB_DATABASE: context_support
+    depends_on:
+      - mongodb
+    ports:
+      - "8082:8082"
+  frontend:
+    build:
+      context: ../frontend/user-agent-portal
+      dockerfile: Dockerfile
+    environment:
+      VITE_INCIDENT_API: http://incident-service:8080
+      VITE_NOTIFICATION_API: http://notification-service:8081
+      VITE_SENTIMENT_API: http://sentiment-service:8082
+    ports:
+      - "3000:80"
+    depends_on:
+      - incident-service
+      - notification-service
+      - sentiment-service
+
+volumes:
+  mongo-data:
