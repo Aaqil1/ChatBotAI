@@ -5,9 +5,9 @@ spring:
     name: sentiment-service
   data:
     mongodb:
-      host: \${MONGODB_HOST:mongodb}
-      port: \${MONGODB_PORT:27017}
-      database: \${MONGODB_DATABASE:context_support}
+      host: ${MONGODB_HOST:mongodb}
+      port: ${MONGODB_PORT:27017}
+      database: ${MONGODB_DATABASE:context_support}
   jackson:
     serialization:
       WRITE_DATES_AS_TIMESTAMPS: false

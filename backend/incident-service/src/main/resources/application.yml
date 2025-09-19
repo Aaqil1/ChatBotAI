@@ -5,9 +5,9 @@ spring:
     name: incident-service
   data:
     mongodb:
-      host: \${MONGODB_HOST:mongodb}
-      port: \${MONGODB_PORT:27017}
-      database: \${MONGODB_DATABASE:context_support}
+      host: ${MONGODB_HOST:mongodb}
+      port: ${MONGODB_PORT:27017}
+      database: ${MONGODB_DATABASE:context_support}
   jackson:
     serialization:
       WRITE_DATES_AS_TIMESTAMPS: false
@@ -18,6 +18,6 @@ management:
         include: health,info,prometheus
 services:
   sentiment:
-    base-url: \${SENTIMENT_URL:http://sentiment-service:8082}
+    base-url: ${SENTIMENT_URL:http://sentiment-service:8082}
   notification:
-    base-url: \${NOTIFICATION_URL:http://notification-service:8081}
+    base-url: ${NOTIFICATION_URL:http://notification-service:8081}
