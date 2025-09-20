@@ -1,0 +1,46 @@
+server:
+  port: 8080
+spring:
+  application:
+    name: incident-service
+  mail:
+    host: \${SMTP_HOST:localhost}
+    port: \${SMTP_PORT:2525}
+    username: \${SMTP_USERNAME:}
+    password: \${SMTP_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: false
+          starttls:
+            enable: false
+  data:
+    mongodb:
+      host: \${MONGODB_HOST:mongodb}
+      port: \${MONGODB_PORT:27017}
+      database: \${MONGODB_DATABASE:context_support}
+  jackson:
+    serialization:
+      WRITE_DATES_AS_TIMESTAMPS: false
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+services:
+  sentiment:
+    base-url: \${SENTIMENT_URL:http://sentiment-service:8082}
+  notification:
+    base-url: \${NOTIFICATION_URL:http://notification-service:8081}
+email:
+  smtp:
+    host: \${SMTP_HOST:localhost}
+    bind-host: \${SMTP_BIND_HOST:0.0.0.0}
+    port: \${SMTP_PORT:2525}
+    from-address: \${SMTP_FROM:noreply@contextsupport.ai}
+    enabled: \${SMTP_ENABLED:true}
+  inbox:
+    enabled: \${EMAIL_INBOX_ENABLED:true}
+    address: \${EMAIL_INBOX_ADDRESS:support@contextsupport.ai}
+    polling-interval-ms: \${EMAIL_INBOX_POLL_MS:5000}
+  portal-base-url: \${PORTAL_BASE_URL:http://localhost:3000}
